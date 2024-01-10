@@ -13,9 +13,9 @@ namespace SchoolLibrary.Implementations
     public class LibrarySqlDataService : ILibraryDataService
     {
 
-        SqlConnection _connection;
-        SqlCommand _command;
-        SqlDataReader _reader;
+        private SqlConnection _connection;
+        private SqlCommand _command;
+        private SqlDataReader _reader;
 
         public LibrarySqlDataService()
         {
@@ -46,7 +46,21 @@ namespace SchoolLibrary.Implementations
 
         public void DeleteBook(long serialNumber)
         {
-            throw new NotImplementedException();
+            // Define an SQL command for DELETE, making use of an SQL parameter for the unique identifier
+            _command = new SqlCommand("DELETE FROM Books WHERE SerialNumber = @serialNumber", _connection);
+            _command.Parameters.AddWithValue("serialNumber", serialNumber);
+
+            // Open the connection, if it's not already open
+            if (_connection.State == ConnectionState.Closed)
+            {
+                _connection.Open();
+            }
+
+            // Execute the command using the open connection
+            _command.ExecuteNonQuery();
+
+            // Close the connection
+            _connection.Close();
         }
 
         public IEnumerable<Book> FetchAllBooks()
@@ -89,12 +103,64 @@ namespace SchoolLibrary.Implementations
 
         public Book FetchBookByTitle(string title)
         {
-            throw new NotImplementedException();
+            Book book = null;
+
+            // Define an SQL command for SELECT, to retrieve the matching book            
+            _command = new SqlCommand("SELECT * FROM Books WHERE Title LIKE @title", _connection);
+            _command.Parameters.AddWithValue("title", "%" + title + "%");
+
+            // Open the connection, if it's not already open
+            if (_connection.State == ConnectionState.Closed)
+            {
+                _connection.Open();
+            }
+
+            // Execute the command as a query, and assign it to a data reader
+            _reader = _command.ExecuteReader();
+
+            // Read the results iteratively from the data reader to retrieve the book
+            if (!_reader.HasRows)
+            {
+                return book;
+            }
+
+            while (_reader.Read())
+            {
+                book = new Book
+                {
+                    SerialNumber = _reader.GetInt64("SerialNumber"),
+                    Title = _reader.GetString("title"),
+                    Author = _reader.GetString("Author"),
+                    YearPublished = _reader.GetInt32("YearPublished"),
+                    Category = _reader.GetString("Category")
+                };
+            }
+
+            // Display the book that was found
+            return book;
         }
 
         public void UpdateBook(long serialNumber, string title, string author, int yearPublished, string category)
         {
-            throw new NotImplementedException();
+            // Define an SQL command for UPDATE, making use of SQL parameters for the field values and the unique identifier
+            _command = new SqlCommand("UPDATE Books SET Title = @title, Author = @author, YearPublished = @year, Category = @category WHERE SerialNumber = @serialNumber", _connection);
+            _command.Parameters.AddWithValue("title", title);
+            _command.Parameters.AddWithValue("author", author);
+            _command.Parameters.AddWithValue("year", yearPublished);
+            _command.Parameters.AddWithValue("category", category);
+            _command.Parameters.AddWithValue("serialNumber", serialNumber);
+
+            // Open the connection, if it's not already open
+            if (_connection.State == ConnectionState.Closed)
+            {
+                _connection.Open();
+            }
+
+            // Execute the command using the open connection
+            _command.ExecuteNonQuery();
+
+            // Close the connection
+            _connection.Close();
         }
     }
 }
